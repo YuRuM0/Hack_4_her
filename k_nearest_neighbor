@@ -1,0 +1,66 @@
+import pandas as pd
+import numpy as np
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+from sklearn.feature_extraction.text import CountVectorizer
+
+
+data_dict = {
+'fem': [ "agree", "affectionate", "child", "cheer", "collab", "commit",
+    "communal", "compassion", "connect","considerate", "cooperat","co-operat", "depend",
+    "emotiona", "empath", "feel", "flatterable", "gentle","honest", "interpersonal",
+    "interdependen",    "interpersona",    "inter-personal",    "inter-dependen",
+    "inter-persona",    "kind",    "kinship",    "loyal",    "modesty",    "nag",    "nurtur",    "pleasant",
+    "polite",    "quiet",    "respon",    "sensitiv",    "submissive",    "support",    "sympath",    "tender",
+    "together",    "trust",    "understand",    "warm",    "whin",    "enthusias",    "inclusive",    "yield",
+    "share",    "sharin"    ],
+
+'masc': [    "active",    "adventurous",
+    "aggress",    "ambitio",    "analy",    "assert",
+    "athlet",    "autonom",    "battle",    "boast",
+    "challeng",    "champion",    "compet",    "confident",
+    "courag",    "decid",    "decision",    "decisive",
+    "defend",    "determin",    "domina",    "dominant",
+    "driven",    "fearless",    "fight",    "force",
+    "greedy",   "head-strong",    "headstrong",  "hierarch",
+    "hostil",    "impulsive",    "independen",    "individual",
+    "intellect",    "lead",    "logic",    "objective",
+    "opinion",    "outspoken",    "persist",    "principle",
+    "reckless",    "self-confiden",    "self-relian",    "self-sufficien",
+    "selfconfiden",    "selfrelian",    "selfsufficien",    "stubborn",
+    "superior",    "unreasonab"]
+    }
+feminine_coded = data_dict['fem']
+masculine_coded = data_dict['masc']
+
+labels = ['feminine_coded'] * len(feminine_coded) + ['masculine_coded'] * len(masculine_coded)
+words = feminine_coded + masculine_coded
+df = pd.DataFrame({'word': words, 'label': labels})
+
+vectorizer = CountVectorizer(analyzer='char', ngram_range=(1,3))
+X = vectorizer.fit_transform(df['word'])
+
+Y = df['label']
+
+X_train, X_test, y_train, y_test = train_test_split(X, Y, 
+                                                    test_size=0.2, 
+                                                    random_state=42)
+model = KNeighborsClassifier(n_neighbors=1)
+model.fit(X, Y)
+
+y_pred = model.predict(X_test)
+print("Accuracy.", accuracy_score(y_test, y_pred))
+
+def predict_gender(word, vectorizer, model, distance_threshold=0.5):
+  """Predict fem or masc coded"""
+  vector = vectorizer.transform([word])
+  distances, indices = model.kneighbors(vector, n_neighbors=5)
+  distances = distances[0]
+  if abs(distances[0] - distances[1]) < distance_threshold:
+        return "neutral"
+  return model.predict(vector)[0]
+
+#print(predict_gender("strong", vectorizer, model))
